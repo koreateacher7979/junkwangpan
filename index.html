@@ -42,12 +42,11 @@
 
         #led-text {
             white-space: nowrap;
-            font-size: 85dvh; 
             font-weight: 900;
-            line-height: 1;
+            line-height: normal; /* 위아래 글자가 잘리지 않도록 normal로 변경 */
             text-shadow: 0 0 20px currentColor; /* Glow effect */
             margin: 0;
-            padding: 0;
+            padding: 0.2em 0.5em; /* 폰트 크기에 비례하는 패딩을 주어 그림자 및 글자 끝부분 잘림 완벽 방지 */
             /* Ensure text vertically centered exactly */
             display: flex;
             align-items: center;
@@ -188,6 +187,45 @@
             else speedLabel.textContent = '빠르게';
         });
 
+        // 텍스트가 화면에서 잘리지 않도록 폰트 크기를 동적으로 계산하는 핵심 함수
+        function resizeText() {
+            if (ledContainer.style.display === 'none') return;
+            
+            const effect = inputEffect.value;
+            const isScrolling = effect === 'left' || effect === 'right';
+            
+            // 크기 비율 측정을 위해 임시로 기본 폰트 사이즈(100px) 설정
+            ledText.style.fontSize = '100px';
+            
+            const containerW = window.innerWidth;
+            const containerH = window.innerHeight;
+            
+            // 100px 기준일 때의 실제 텍스트 박스 크기 측정
+            const textWidth = ledText.offsetWidth;
+            const textHeight = ledText.offsetHeight;
+            
+            let optimalSize;
+            
+            if (isScrolling) {
+                // 스크롤 시: 가로 길이는 무관함. 화면 높이의 75% 수준으로 맞춰 위아래 잘림 방지.
+                const heightRatio = (containerH * 0.75) / textHeight;
+                optimalSize = 100 * heightRatio;
+            } else {
+                // 정지/깜빡임 시: 글자가 길면 가로 폭도 넘치지 않도록(화면의 90%) 맞춤 계산.
+                const widthRatio = (containerW * 0.9) / textWidth;
+                const heightRatio = (containerH * 0.75) / textHeight;
+                optimalSize = 100 * Math.min(widthRatio, heightRatio); // 가로, 세로 중 더 꽉 차는 쪽에 맞춤
+            }
+            
+            ledText.style.fontSize = `${optimalSize}px`;
+        }
+
+        // 스마트폰 가로/세로 회전이나 화면 크기 변경 시 실시간으로 글자 크기 재조정
+        window.addEventListener('resize', resizeText);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(resizeText, 100); // 브라우저 크기 갱신 대기 후 재조정
+        });
+
         // Start LED Signboard
         btnStart.addEventListener('click', async () => {
             const text = inputText.value || '문구를 입력해주세요';
@@ -223,6 +261,9 @@
             // Transition to LED View
             settingsView.style.display = 'none';
             ledContainer.style.display = 'flex';
+            
+            // 화면에 보여지기 직전 최적의 폰트 사이즈로 맞춤 세팅
+            resizeText();
 
             // Attempt to request Fullscreen and lock to landscape orientation
             try {
