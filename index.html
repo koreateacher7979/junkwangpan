@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>스마트 전광판 앱</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,6 +18,7 @@
             color: #ffffff;
             margin: 0;
             overflow: hidden; /* Prevent scrolling */
+            touch-action: none;
         }
 
         /* LED Screen styles */
@@ -24,7 +28,7 @@
             top: 0;
             left: 0;
             width: 100vw;
-            height: 100vh;
+            height: 100dvh; 
             z-index: 9999;
             display: flex;
             align-items: center;
@@ -38,7 +42,7 @@
 
         #led-text {
             white-space: nowrap;
-            font-size: 90vh; /* Increased to fill more of the screen */
+            font-size: 85dvh; 
             font-weight: 900;
             line-height: 1;
             text-shadow: 0 0 20px currentColor; /* Glow effect */
@@ -149,6 +153,10 @@
                 전광판 실행하기
             </button>
             <p class="text-center text-xs text-gray-500 mt-2">※ 실행 후 화면을 터치하면 다시 설정으로 돌아옵니다.</p>
+            <p class="text-center text-xs text-yellow-500 mt-2 font-bold bg-gray-800 p-2 rounded-lg border border-yellow-700/50">
+                💡 아이폰(Safari) 완벽 전체화면 팁:<br>
+                하단 공유[↑] 버튼 > '홈 화면에 추가' 후 앱처럼 실행하세요!
+            </p>
         </div>
     </div>
 
@@ -218,11 +226,13 @@
 
             // Attempt to request Fullscreen and lock to landscape orientation
             try {
-                // For modern browsers
-                if (document.documentElement.requestFullscreen) {
-                    await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
-                } else if (document.documentElement.webkitRequestFullscreen) { /* Safari/iOS */
-                    await document.documentElement.webkitRequestFullscreen();
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    await elem.requestFullscreen({ navigationUI: 'hide' });
+                } else if (elem.webkitRequestFullscreen) { /* Safari/iOS */
+                    await elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) { /* IE/Edge */
+                    await elem.msRequestFullscreen();
                 }
                 
                 // Try to lock orientation to landscape (Works on Android/Chrome, restricted on some iOS)
