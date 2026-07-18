@@ -31,14 +31,22 @@
             justify-content: center;
             overflow: hidden;
             cursor: pointer;
+            /* Ensure it takes full screen on mobile */
+            margin: 0;
+            padding: 0;
         }
 
         #led-text {
             white-space: nowrap;
-            font-size: 80vh; /* Extremely large text based on screen height */
+            font-size: 90vh; /* Increased to fill more of the screen */
             font-weight: 900;
             line-height: 1;
             text-shadow: 0 0 20px currentColor; /* Glow effect */
+            margin: 0;
+            padding: 0;
+            /* Ensure text vertically centered exactly */
+            display: flex;
+            align-items: center;
         }
 
         /* Animation Definitions */
@@ -210,18 +218,19 @@
 
             // Attempt to request Fullscreen and lock to landscape orientation
             try {
+                // For modern browsers
                 if (document.documentElement.requestFullscreen) {
-                    await document.documentElement.requestFullscreen();
-                } else if (document.documentElement.webkitRequestFullscreen) { /* Safari */
+                    await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+                } else if (document.documentElement.webkitRequestFullscreen) { /* Safari/iOS */
                     await document.documentElement.webkitRequestFullscreen();
                 }
                 
                 // Try to lock orientation to landscape (Works on Android/Chrome, restricted on some iOS)
                 if (screen.orientation && screen.orientation.lock) {
-                    await screen.orientation.lock('landscape').catch(e => console.log("Orientation lock not supported/allowed"));
+                    await screen.orientation.lock('landscape').catch(e => console.log("Orientation lock not supported/allowed on this device."));
                 }
             } catch (err) {
-                console.warn("Fullscreen or Orientation Lock failed:", err);
+                console.warn("Fullscreen or Orientation Lock failed. This is normal on some mobile browsers unless triggered by user action:", err);
             }
         });
 
