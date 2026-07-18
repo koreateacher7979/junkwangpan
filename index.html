@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>스마트 전광판 앱</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            overflow: hidden; /* Prevent scrolling */
+        }
+
+        /* LED Screen styles */
+        #led-container {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        #led-text {
+            white-space: nowrap;
+            font-size: 80vh; /* Extremely large text based on screen height */
+            font-weight: 900;
+            line-height: 1;
+            text-shadow: 0 0 20px currentColor; /* Glow effect */
+        }
+
+        /* Animation Definitions */
+        @keyframes scroll-left {
+            0% { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
+        }
+
+        @keyframes scroll-right {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100vw); }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        @keyframes static {
+            0%, 100% { transform: translateX(0); }
+        }
+
+        /* Utility classes for JS injection */
+        .anim-left { animation-name: scroll-left; animation-timing-function: linear; animation-iteration-count: infinite; }
+        .anim-right { animation-name: scroll-right; animation-timing-function: linear; animation-iteration-count: infinite; }
+        .anim-blink { animation-name: blink; animation-timing-function: step-start; animation-iteration-count: infinite; }
+        .anim-static { animation-name: static; }
+
+        /* Custom range slider styling */
+        input[type=range] {
+            accent-color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="settings-view" class="min-h-screen flex flex-col p-6 max-w-lg mx-auto">
+        
+        <!-- Header -->
+        <div class="text-center mb-8 pt-4">
+            <h1 class="text-3xl font-bold text-blue-400 mb-2">스마트 전광판</h1>
+            <p class="text-sm text-gray-400 font-medium bg-gray-800 inline-block py-1 px-4 rounded-full border border-gray-700">
+                개발자 : 가치있는미래교육연구소 대표 김병찬
+            </p>
+        </div>
+
+        <div class="bg-gray-900 rounded-2xl p-6 shadow-2xl border border-gray-800 space-y-6">
+            
+            <!-- Text Input -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-2">표시할 문구</label>
+                <input type="text" id="input-text" placeholder="여기에 문구를 입력하세요!" value="환영합니다!" 
+                    class="w-full bg-gray-800 text-white rounded-lg px-4 py-3 border border-gray-700 focus:outline-none focus:border-blue-500 transition-colors text-lg">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Text Color -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-300 mb-2">글씨 색상</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="color" id="input-color" value="#ffeb3b" class="h-10 w-full rounded cursor-pointer bg-gray-800 border-0 p-1">
+                    </div>
+                </div>
+
+                <!-- Background Color -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-300 mb-2">배경 색상</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="color" id="input-bg" value="#000000" class="h-10 w-full rounded cursor-pointer bg-gray-800 border-0 p-1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Effect Selection -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-2">글씨 효과</label>
+                <select id="input-effect" class="w-full bg-gray-800 text-white rounded-lg px-4 py-3 border border-gray-700 focus:outline-none focus:border-blue-500 transition-colors cursor-pointer appearance-none">
+                    <option value="left">왼쪽으로 이동 (기본)</option>
+                    <option value="right">오른쪽으로 이동</option>
+                    <option value="blink">깜빡임</option>
+                    <option value="static">정지화면</option>
+                </select>
+            </div>
+
+            <!-- Speed Control -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <label class="block text-sm font-semibold text-gray-300">글자 이동 속도</label>
+                    <span id="speed-label" class="text-xs text-blue-400 font-bold">보통</span>
+                </div>
+                <input type="range" id="input-speed" min="1" max="10" value="5" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>느리게</span>
+                    <span>빠르게</span>
+                </div>
+            </div>
+
+            <!-- Execute Button -->
+            <button id="btn-start" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl text-lg shadow-lg transform transition active:scale-95 mt-4">
+                전광판 실행하기
+            </button>
+            <p class="text-center text-xs text-gray-500 mt-2">※ 실행 후 화면을 터치하면 다시 설정으로 돌아옵니다.</p>
+        </div>
+    </div>
+
+    <!-- LED View (Hidden Initially) -->
+    <div id="led-container" style="display: none;">
+        <div id="led-text"></div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const settingsView = document.getElementById('settings-view');
+        const ledContainer = document.getElementById('led-container');
+        const ledText = document.getElementById('led-text');
+        const btnStart = document.getElementById('btn-start');
+        
+        // Input Elements
+        const inputText = document.getElementById('input-text');
+        const inputColor = document.getElementById('input-color');
+        const inputBg = document.getElementById('input-bg');
+        const inputEffect = document.getElementById('input-effect');
+        const inputSpeed = document.getElementById('input-speed');
+        const speedLabel = document.getElementById('speed-label');
+
+        // Update speed label dynamically
+        inputSpeed.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            if (val <= 3) speedLabel.textContent = '느리게';
+            else if (val <= 7) speedLabel.textContent = '보통';
+            else speedLabel.textContent = '빠르게';
+        });
+
+        // Start LED Signboard
+        btnStart.addEventListener('click', async () => {
+            const text = inputText.value || '문구를 입력해주세요';
+            const color = inputColor.value;
+            const bg = inputBg.value;
+            const effect = inputEffect.value;
+            const speed = parseInt(inputSpeed.value);
+
+            // Apply Settings to LED View
+            ledText.textContent = text;
+            ledText.style.color = color;
+            ledContainer.style.backgroundColor = bg;
+
+            // Reset classes
+            ledText.className = '';
+            
+            // Apply Effect
+            if (effect === 'left') ledText.classList.add('anim-left');
+            else if (effect === 'right') ledText.classList.add('anim-right');
+            else if (effect === 'blink') ledText.classList.add('anim-blink');
+            else if (effect === 'static') ledText.classList.add('anim-static');
+
+            // Calculate speed (Slider 1 to 10)
+            // If speed is 10 (fastest), duration is 2s. If speed is 1 (slowest), duration is 20s.
+            let duration = 2; // Default for blink/static
+            if (effect === 'left' || effect === 'right') {
+                duration = (11 - speed) * 2; // Converts 1-10 slider to 20s-2s duration
+            } else if (effect === 'blink') {
+                duration = (11 - speed) * 0.1; // Converts to 1s - 0.1s blink rate
+            }
+            ledText.style.animationDuration = `${duration}s`;
+
+            // Transition to LED View
+            settingsView.style.display = 'none';
+            ledContainer.style.display = 'flex';
+
+            // Attempt to request Fullscreen and lock to landscape orientation
+            try {
+                if (document.documentElement.requestFullscreen) {
+                    await document.documentElement.requestFullscreen();
+                } else if (document.documentElement.webkitRequestFullscreen) { /* Safari */
+                    await document.documentElement.webkitRequestFullscreen();
+                }
+                
+                // Try to lock orientation to landscape (Works on Android/Chrome, restricted on some iOS)
+                if (screen.orientation && screen.orientation.lock) {
+                    await screen.orientation.lock('landscape').catch(e => console.log("Orientation lock not supported/allowed"));
+                }
+            } catch (err) {
+                console.warn("Fullscreen or Orientation Lock failed:", err);
+            }
+        });
+
+        // Stop LED Signboard on click
+        ledContainer.addEventListener('click', async () => {
+            // Hide LED, Show Settings
+            ledContainer.style.display = 'none';
+            settingsView.style.display = 'flex';
+
+            // Stop Fullscreen
+            try {
+                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                    if (document.exitFullscreen) {
+                        await document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) { /* Safari */
+                        await document.webkitExitFullscreen();
+                    }
+                }
+                
+                // Unlock orientation
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+            } catch (err) {
+                console.warn("Exit Fullscreen failed:", err);
+            }
+        });
+    </script>
+</body>
+</html>
